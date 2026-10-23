@@ -1,0 +1,92 @@
+# Magpie Mercury 插件
+
+[English](README.md)
+
+在 [Magpie](https://usemagpie.ai) 中使用 **Inception Labs Mercury** 模型。支持输入自己的 Inception API Key，也可以输入 `playground`，通过 Inception 官方 Playground 服务体验模型。
+
+## 快速开始
+
+安装 Magpie 后运行：
+
+```bash
+magpie plugin add github:4x25/magpie-provider-mercury
+magpie plugin login inception
+magpie provider test inception
+```
+
+按提示输入 API Key 或 `playground`，然后在 Magpie 中为 Agent 选择 **`inception/mercury-3`** 等模型。
+
+也可以从本地克隆目录安装：
+
+```bash
+magpie plugin add /path/to/magpie-provider-mercury
+```
+
+在应用中，打开 **Plugins → Add a plugin**，填入 GitHub 安装地址或本地目录，再为 **Inception (Mercury)** 登录。
+
+## 登录方式
+
+### 使用自己的 API Key
+
+1. 在 [Inception 控制台](https://platform.inceptionlabs.ai/dashboard/api-keys) 创建 API Key。
+2. 运行 `magpie plugin login inception`，或打开供应商的登录窗口。
+3. 将 Key 粘贴到 API Key 输入框。
+
+请求使用 Inception 的 OpenAI 兼容接口 `https://api.inceptionlabs.ai/v1`。编码 Agent 和日常使用推荐选择此模式。
+
+### 使用 Playground
+
+在同一个输入框中输入 `playground`，即可使用 Inception 官方体验服务。大小写及首尾空白不影响识别。
+
+Playground 适合试用模型，其能力和可用性可能变化，不适合依赖工具调用的工作流。
+
+| 功能 | API Key | Playground |
+| --- | --- | --- |
+| 文本聊天与流式回复 | 支持 | 支持 |
+| 工具调用 | 聊天模型支持 | 不支持 |
+| 模型目录 | 从 Inception 刷新 | 插件内置 |
+| 采样及结构化输出选项 | 传递给正式 API | 仅使用体验服务支持的参数 |
+| Token 用量 | 按 API 返回值记录 | 流式回复不提供 |
+| 费用 | 按 Inception 账号计费 | 免费体验 |
+
+Playground 接受消息、模型、输出 token 上限、流式开关和推理强度。即使客户端要求完整回复，Magpie 通常也会向上游发送流式请求，因此 Playground 用量可能显示为零；这不代表实际测得的 token 数。
+
+## 模型
+
+插件预置以下聊天模型：
+
+| 模型 ID | 上下文 token | 最大输出 token |
+| --- | --- | --- |
+| `inception/mercury-3` | 1,000,000 | 131,072 |
+| `inception/mercury-2.5` | 260,000 | 65,536 |
+| `inception/mercury-2` | 128,000 | 50,000 |
+
+使用 API Key 时，Magpie 从 Inception 刷新目录，仅列出支持聊天接口的模型。获取失败时保留已知目录。
+
+公开目录中的模型不一定都能被当前账号调用，实际访问权限由 Inception 的账号权限和服务可用性决定。最新能力、限制及价格请以 [官方模型文档](https://docs.inceptionlabs.ai/get-started/models) 为准。
+
+Magpie 提供 `low`、`medium`、`high` 三档推理强度，以 `reasoning_effort` 发送。
+
+查看可用模型：
+
+```bash
+magpie models
+```
+
+## 凭证管理
+
+登录信息由 Magpie 管理，保存在配置目录中的 `plugin-auth.json`。普通安装使用 `~/.config/magpie` 或 `$XDG_CONFIG_HOME/magpie`，便携版使用自身的数据目录。请妥善保管此文件。API Key 模式使用已保存的 Key，Playground 请求不携带账号凭证。
+
+## 开发
+
+插件运行在 Magpie 的 Bun 插件宿主中。本地检查需要 Node.js 20 或更新版本：
+
+```bash
+npm run check
+```
+
+单元测试使用模拟网络响应。普通安装的集成测试可将 `HOME`、`XDG_CONFIG_HOME`、`XDG_CACHE_HOME` 指向独立的沙箱目录；便携版请使用独立的 Magpie 程序及数据目录。修改本地安装的插件后，在 Magpie 中禁用再启用以重新加载。
+
+## 许可证
+
+[MIT](LICENSE)

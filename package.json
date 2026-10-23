@@ -1,0 +1,38 @@
+{
+  "name": "magpie-provider-mercury",
+  "version": "0.1.0",
+  "description": "Inception Labs Mercury provider plugin for Magpie: use your own API key or the free Mercury playground",
+  "type": "module",
+  "main": "./index.mjs",
+  "files": [
+    "index.mjs",
+    "src/",
+    "README.md",
+    "README.zh-CN.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "magpie",
+    "magpie-plugin",
+    "inception",
+    "mercury"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/4x25/magpie-provider-mercury.git"
+  },
+  "scripts": {
+    "test": "node --test",
+    "check": "node --check index.mjs && node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "magpie": {
+    "maxConcurrency": 4,
+    "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHRpdGxlPkluY2VwdGlvbjwvdGl0bGU+PHBhdGggZD0iTTE0Ljc2NyAxSDcuODg0TDEgNy44ODN2Ni44ODRoNi44ODRWNy44ODNoNi44ODNWMXpNOS4yMzQgMjNoNi44ODJMMjMgMTYuMTE2VjkuMjMzaC02Ljg4NHY2Ljg4M0g5LjIzNFYyM3oiLz48L3N2Zz4="
+  }
+}
