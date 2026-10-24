@@ -3,13 +3,30 @@
 // public endpoint behind Inception's own playground.
 
 import { API_BASE, PLAYGROUND_BASE, PLAYGROUND_KEY } from "./catalog.mjs"
+import { KEYS_INPUT, KEYS_REQUIRED, keyImporter, parseAPIKeys } from "./accounts.mjs"
 import { playgroundFetch } from "./playground.mjs"
 
-export function authMethod() {
+export function authMethod(input) {
+  const label = "Inception API keys (or playground)"
+  const placeholder = "sk_… — separate keys with commas or spaces, or type playground"
+  const importKeys = keyImporter(input)
   return {
     type: "api",
-    label: "Inception API key (or playground)",
-    placeholder: "sk_… — or type playground to use the Mercury playground",
+    label,
+    placeholder,
+    // The password prompt supplies the credentials to authorize. Magpie
+    // skips its default key field, leaving one input for a single or a batch.
+    keyless: true,
+    prompts: [
+      {
+        type: "password",
+        key: KEYS_INPUT,
+        message: label,
+        placeholder,
+        validate: (value) => (parseAPIKeys(value).length ? undefined : KEYS_REQUIRED),
+      },
+    ],
+    authorize: async (inputs = {}) => importKeys(inputs[KEYS_INPUT]),
   }
 }
 

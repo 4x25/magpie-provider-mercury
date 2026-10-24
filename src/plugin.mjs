@@ -39,7 +39,7 @@ export async function MercuryPlugin(input) {
 
     auth: {
       provider: PROVIDER,
-      methods: [authMethod()],
+      methods: [authMethod(input)],
       loader,
     },
 

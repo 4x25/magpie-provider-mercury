@@ -2,11 +2,11 @@
 
 [简体中文](README.zh-CN.md)
 
-Use **Inception Labs Mercury** models in [Magpie](https://usemagpie.ai). Sign in with your own Inception API key, or enter `playground` to try Mercury through Inception's official Playground service.
+Use **Inception Labs Mercury** models in [Magpie](https://usemagpie.ai). Sign in with one or more Inception API keys, or enter `playground` to try Mercury through Inception's official Playground service.
 
 ## Quick start
 
-With Magpie installed, run:
+With Magpie 0.1.1323 or later installed, run:
 
 ```bash
 magpie plugin add github:4x25/magpie-provider-mercury
@@ -14,7 +14,7 @@ magpie plugin login inception
 magpie provider test inception
 ```
 
-When prompted, enter an API key or `playground`. Then select a model such as **`inception/mercury-3`** in Magpie for your agent.
+When prompted, enter one or more API keys separated by commas or spaces, or enter `playground`. Then select a model such as **`inception/mercury-3`** in Magpie for your agent.
 
 To install a local clone instead:
 
@@ -30,9 +30,27 @@ In the app, open **Plugins → Add a plugin**, enter the GitHub spec or local fo
 
 1. Create a key in the [Inception dashboard](https://platform.inceptionlabs.ai/dashboard/api-keys).
 2. Run `magpie plugin login inception` or open the provider's sign-in dialog.
-3. Paste the key into the API key field.
+3. Paste one key or several keys separated by English commas or spaces into the password field.
 
 Requests use Inception's OpenAI-compatible API at `https://api.inceptionlabs.ai/v1`. This mode is recommended for coding agents and regular use.
+
+### Multiple keys
+
+Use the same field to import a batch, for example:
+
+```text
+sk_example_A, sk_example_B sk_example_A
+```
+
+Surrounding whitespace and empty entries are removed, and duplicate keys are kept only once. API keys retain their original capitalization. Importing a key already saved for Inception reuses its existing account, including its settings. Each account name shows the key's final four characters and a short fingerprint so keys with the same ending remain distinct.
+
+Each unique key appears as a separate account under **Inception (Mercury)**. Use Magpie's account controls to choose the first account or enable and disable additional accounts. Magpie records each account's request usage when the API reports it, and its native routing can fail over to another enabled account after a refusal or rate limit. The plugin stores individual credentials, not a joined key list.
+
+List the accounts in the terminal:
+
+```bash
+magpie accounts inception
+```
 
 ### Playground
 
@@ -75,7 +93,7 @@ magpie models
 
 ## Credentials
 
-Magpie manages sign-ins in `plugin-auth.json` in its configuration directory. For a standard installation, this is `~/.config/magpie` or `$XDG_CONFIG_HOME/magpie`; a portable installation uses its own data directory. Treat this file as sensitive. API-key requests use the saved key; Playground requests are sent without account credentials.
+Magpie manages sign-ins in `plugin-auth.json` in its configuration directory. For a standard installation, this is `~/.config/magpie` or `$XDG_CONFIG_HOME/magpie`; a portable installation uses its own data directory. Each imported key has its own account entry. Treat this file as sensitive. API-key requests use the selected account's key; Playground requests are sent without account credentials.
 
 ## Development
 

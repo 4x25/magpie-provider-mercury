@@ -3,7 +3,7 @@ import test from "node:test"
 
 import plugin, { _internal } from "../index.mjs"
 
-const { API_BASE, PLAYGROUND_BASE, PROVIDER, isPlaygroundAuth, authMethod } = _internal
+const { API_BASE, PLAYGROUND_BASE, PROVIDER, isPlaygroundAuth, KEYS_INPUT, KEYS_REQUIRED } = _internal
 
 const hooks = () => plugin({ client: { app: { log: async () => {} } } })
 
@@ -40,12 +40,23 @@ test("config keeps what the user already set", async () => {
   assert.ok(provider.models["mercury-2"])
 })
 
-test("the sign-in method is one API key field that also takes playground", async () => {
+test("the sign-in method asks for keys once in a password field", async () => {
   const { auth } = await hooks()
   assert.equal(auth.provider, PROVIDER)
-  assert.deepEqual(auth.methods, [authMethod()])
-  assert.equal(auth.methods[0].type, "api")
-  assert.match(auth.methods[0].placeholder, /playground/)
+  assert.equal(auth.methods.length, 1)
+  const method = auth.methods[0]
+  assert.equal(method.type, "api")
+  assert.equal(method.keyless, true)
+  assert.match(method.placeholder, /commas or spaces/)
+  assert.match(method.placeholder, /playground/)
+  assert.equal(method.prompts.length, 1)
+  const prompt = method.prompts[0]
+  assert.equal(prompt.type, "password")
+  assert.equal(prompt.key, KEYS_INPUT)
+  assert.equal(prompt.validate(" ,  "), KEYS_REQUIRED)
+  assert.equal(prompt.validate("  sk_test,sk_second  "), undefined)
+  assert.equal(prompt.validate("playground"), undefined)
+  assert.equal(typeof method.authorize, "function")
 })
 
 test("the loader gives a key account the API and a playground account the playground", async () => {

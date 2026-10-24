@@ -2,11 +2,11 @@
 
 [English](README.md)
 
-在 [Magpie](https://usemagpie.ai) 中使用 **Inception Labs Mercury** 模型。支持输入自己的 Inception API Key，也可以输入 `playground`，通过 Inception 官方 Playground 服务体验模型。
+在 [Magpie](https://usemagpie.ai) 中使用 **Inception Labs Mercury** 模型。支持输入一个或多个 Inception API Key，也可以输入 `playground`，通过 Inception 官方 Playground 服务体验模型。
 
 ## 快速开始
 
-安装 Magpie 后运行：
+安装 Magpie 0.1.1323 或更新版本后运行：
 
 ```bash
 magpie plugin add github:4x25/magpie-provider-mercury
@@ -14,7 +14,7 @@ magpie plugin login inception
 magpie provider test inception
 ```
 
-按提示输入 API Key 或 `playground`，然后在 Magpie 中为 Agent 选择 **`inception/mercury-3`** 等模型。
+按提示输入一个或多个以英文逗号、空格分隔的 API Key，或输入 `playground`，然后在 Magpie 中为 Agent 选择 **`inception/mercury-3`** 等模型。
 
 也可以从本地克隆目录安装：
 
@@ -30,9 +30,27 @@ magpie plugin add /path/to/magpie-provider-mercury
 
 1. 在 [Inception 控制台](https://platform.inceptionlabs.ai/dashboard/api-keys) 创建 API Key。
 2. 运行 `magpie plugin login inception`，或打开供应商的登录窗口。
-3. 将 Key 粘贴到 API Key 输入框。
+3. 在密码输入框中粘贴一个 Key，或以英文逗号、空格分隔的多个 Key。
 
 请求使用 Inception 的 OpenAI 兼容接口 `https://api.inceptionlabs.ai/v1`。编码 Agent 和日常使用推荐选择此模式。
+
+### 多个 API Key
+
+在同一个输入框中批量导入，例如：
+
+```text
+sk_example_A, sk_example_B sk_example_A
+```
+
+解析时去掉首尾空白及空项，重复 Key 只保留一次，真实 API Key 的大小写保持不变。再次导入已有 Key 时复用原账号，保留其设置。账号名称显示 Key 的末四位和一段短指纹，因此末尾相同的 Key 仍能区分。
+
+每个唯一 Key 在 **Inception (Mercury)** 下独立显示为一个账号。通过 Magpie 的账号控件选择优先账号，或启停其他账号。API 返回用量时，Magpie 按实际使用的账号记录请求用量；遇到拒绝或限流时，原生路由可切换到其他已启用账号。插件逐个保存凭证，而不是保存拼接的 Key 列表。
+
+在终端查看账号：
+
+```bash
+magpie accounts inception
+```
 
 ### 使用 Playground
 
@@ -75,7 +93,7 @@ magpie models
 
 ## 凭证管理
 
-登录信息由 Magpie 管理，保存在配置目录中的 `plugin-auth.json`。普通安装使用 `~/.config/magpie` 或 `$XDG_CONFIG_HOME/magpie`，便携版使用自身的数据目录。请妥善保管此文件。API Key 模式使用已保存的 Key，Playground 请求不携带账号凭证。
+登录信息由 Magpie 管理，保存在配置目录中的 `plugin-auth.json`。普通安装使用 `~/.config/magpie` 或 `$XDG_CONFIG_HOME/magpie`，便携版使用自身的数据目录。每个导入的 Key 单独保存为一个账号。请妥善保管此文件。API Key 模式使用当前选中账号的 Key，Playground 请求不携带账号凭证。
 
 ## 开发
 
