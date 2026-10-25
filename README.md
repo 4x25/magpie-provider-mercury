@@ -69,6 +69,10 @@ Playground is intended for trying the models. Its capabilities and availability 
 
 Playground accepts messages, the model, an output-token limit, streaming, and reasoning effort. Magpie typically streams upstream requests even when a client asks for a complete reply, so Playground usage can appear as zero; this does not represent a measured token count.
 
+When Playground and API-key accounts are enabled together, requests with nonempty `tools` or `functions`, a forced tool choice, or tool calls/results in their message history are refused locally by the Playground adapter. With normal account failover enabled, Magpie tries another enabled account; these requests are never sent to the Playground service. The refusal leaves the Playground account's sign-in intact and does not put it on cooldown, so ordinary text chat can still use it. Empty tool arrays alone do not trigger this check.
+
+If no enabled API-key account can serve the request, it fails rather than silently dropping the tool workflow. An account pinned to Playground cannot switch to a different account. Routing diagnostics may show a local Playground attempt before the request moves on.
+
 ## Models
 
 The plugin includes these default chat models:

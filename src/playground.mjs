@@ -2,9 +2,10 @@
 // speaks a small OpenAI-compatible subset. This module adapts one Chat
 // Completions request to it and normalizes what comes back:
 //
+//  - tool requests and tool history are refused locally, so Magpie can try
+//    another account without sending the request to the playground;
 //  - only model, messages, max_tokens, stream and reasoning_effort are sent;
-//    everything else (tools, temperature, stop, response_format, …) is
-//    silently ignored upstream, so it is dropped here rather than passed on;
+//    other options (temperature, stop, response_format, …) are dropped;
 //  - stream is always explicit: leaving it out makes the endpoint answer SSE;
 //  - errors are FastAPI's {"detail": …}, turned into OpenAI's error envelope;
 //  - replies are reduced to OpenAI's own fields (the endpoint adds
@@ -47,6 +48,54 @@ export function playgroundRequest(body) {
   return out
 }
 
+const hasItems = (value) => Array.isArray(value) && value.length > 0
+const hasFields = (value) => isObject(value) && Object.keys(value).length > 0
+const toolContentTypes = new Set(["tool_use", "tool_result", "server_tool_use"])
+
+function choosesTool(value) {
+  if (typeof value === "string") return !!value.trim() && !["auto", "none"].includes(value)
+  return hasFields(value) && !["auto", "none"].includes(value.type)
+}
+
+// Tool history still needs a tool-capable account even when the client no
+// longer declares tools on the current turn. Inspect structural fields only;
+// a user talking about tools is still an ordinary text request.
+function toolParameter(body) {
+  if (!isObject(body)) return null
+  if (hasItems(body.tools)) return "tools"
+  if (hasItems(body.functions)) return "functions"
+  if (choosesTool(body.tool_choice)) return "tool_choice"
+  if (choosesTool(body.function_call)) return "function_call"
+  if (Array.isArray(body.messages) && body.messages.some((message) => isObject(message) && (
+    message.role === "tool" || message.role === "function" ||
+    hasItems(message.tool_calls) || hasFields(message.function_call) ||
+    (Array.isArray(message.content) && message.content.some((part) => isObject(part) && toolContentTypes.has(part.type)))
+  ))) return "messages"
+  return null
+}
+
+function toolResponse(param) {
+  // Magpie recognizes these as request-shape refusals: it tries the next
+  // account without resting the playground or changing its sign-in state.
+  const message = param === "messages"
+    ? "Unknown item type: tool call or tool result in Mercury Playground messages. Use an enabled Inception API key for tool requests."
+    : `Unknown parameter: '${param}' for Mercury Playground. Use an enabled Inception API key for tool requests.`
+  return new Response(JSON.stringify({
+    error: {
+      message,
+      type: "invalid_request_error",
+      param,
+      code: param === "messages" ? "unknown_item_type" : "unknown_parameter",
+    },
+  }), {
+    status: 400,
+    headers: {
+      "content-type": "application/json; charset=utf-8",
+      "x-magpie-sign-in": "kept",
+    },
+  })
+}
+
 // playgroundFetch makes an account's request against the playground. The
 // loader gives it every request of a playground sign-in, so it rewrites the
 // URL, drops the account's credential and adapts the body.
@@ -72,6 +121,8 @@ export async function playgroundFetch(_input, init = {}) {
       body = null
     }
   }
+  const tool = toolParameter(body)
+  if (tool) return toolResponse(tool)
   const outgoing = isObject(body) ? playgroundRequest(body) : null
   if (outgoing) headers.set("content-type", "application/json")
 

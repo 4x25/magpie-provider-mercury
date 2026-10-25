@@ -318,7 +318,7 @@ test("playgroundFetch rewrites the URL, drops the credential and filters the bod
       messages: [{ role: "user", content: "hi" }],
       stream: false,
       temperature: 0.2,
-      tools: [{ type: "function" }],
+      tools: [],
     }),
   })
 
