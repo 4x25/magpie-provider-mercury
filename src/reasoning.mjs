@@ -1,5 +1,6 @@
-// Mercury's lowest-latency effort is "instant". Keep the compatible name
-// "none" until Magpie has finished routing and translating the request.
+// Mercury's lowest-latency effort is "instant", also used when the caller
+// omits an effort. Keep the compatible name "none" until Magpie has finished
+// routing and translating an explicit choice.
 
 import { API_BASE } from "./catalog.mjs"
 
@@ -8,6 +9,7 @@ const chatPath = api.pathname + "/chat/completions"
 const isObject = (v) => typeof v === "object" && v !== null && !Array.isArray(v)
 
 export function upstreamEffort(value) {
+  if (value === undefined) return "instant"
   return typeof value === "string" && value.trim().toLowerCase() === "none" ? "instant" : value
 }
 
@@ -21,8 +23,9 @@ export async function bodyText(body) {
 }
 
 // API-key requests keep their URL, credentials, options and raw response.
-// Only a serialized Chat Completions POST with an explicit "none" needs a
-// new body. A Request's own stream is left to fetch, including cancellation.
+// A serialized Chat Completions POST with an omitted effort or explicit
+// "none" gets "instant". A Request's own stream is left to fetch, including
+// cancellation.
 export async function apiFetch(input, init = {}) {
   const request = input instanceof Request ? input : null
   let url

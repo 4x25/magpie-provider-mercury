@@ -18,12 +18,19 @@ function mockFetch(t, result = new Response("fixture response")) {
   return { calls, result }
 }
 
-test("upstreamEffort maps only the compatible none choice", () => {
+test("upstreamEffort defaults missing effort to instant and maps the compatible none choice", () => {
+  assert.equal(upstreamEffort(), "instant")
+  assert.equal(upstreamEffort(undefined), "instant")
   for (const value of ["none", " none ", "NONE"]) assert.equal(upstreamEffort(value), "instant")
-  for (const value of ["low", "medium", "high", "instant", "minimal", "xhigh", "max", "", " low ", null, undefined, 0, false]) {
+  for (const value of ["low", "medium", "high", "instant", "minimal", "xhigh", "max", "", " low ", null, 0, false]) {
     assert.equal(upstreamEffort(value), value)
   }
 })
+
+const mappedEfforts = [
+  ["none", { reasoning_effort: "none" }],
+  ["omitted effort", {}],
+]
 
 const encodings = [
   ["a string", (text) => text],
@@ -35,51 +42,53 @@ const encodings = [
   ["a Blob", (text) => new Blob([text], { type: "application/json" })],
 ]
 
-for (const [name, encode] of encodings) {
-  test(`API-key fetch maps none in ${name} without changing other fields`, async (t) => {
-    const { calls, result } = mockFetch(t)
-    const request = {
-      model: "mercury-3",
-      messages: [user],
-      reasoning_effort: "none",
-      tool_choice: "none",
-      tools: [{ type: "function", function: { name: "get_weather", parameters: { type: "object" } } }],
-      temperature: 0.7,
-      response_format: { type: "json_object" },
-      max_completion_tokens: 256,
-      stream: true,
-      stream_options: { include_usage: true },
-    }
-    const text = JSON.stringify(request)
-    const headers = new Headers({
-      authorization: "Bearer sk_fixture",
-      "content-type": "application/json",
-      "content-length": String(Buffer.byteLength(text)),
-      "x-request-id": "fixture",
+for (const [effort, fields] of mappedEfforts) {
+  for (const [name, encode] of encodings) {
+    test(`API-key fetch sends instant for ${effort} in ${name} without changing other fields`, async (t) => {
+      const { calls, result } = mockFetch(t)
+      const request = {
+        model: "mercury-3",
+        messages: [user],
+        ...fields,
+        tool_choice: "none",
+        tools: [{ type: "function", function: { name: "get_weather", parameters: { type: "object" } } }],
+        temperature: 0.7,
+        response_format: { type: "json_object" },
+        max_completion_tokens: 256,
+        stream: true,
+        stream_options: { include_usage: true },
+      }
+      const text = JSON.stringify(request)
+      const headers = new Headers({
+        authorization: "Bearer sk_fixture",
+        "content-type": "application/json",
+        "content-length": String(Buffer.byteLength(text)),
+        "x-request-id": "fixture",
+      })
+      const controller = new AbortController()
+      const init = {
+        method: "POST", headers, body: encode(text), signal: controller.signal,
+        redirect: "error", cache: "no-store",
+      }
+      const res = await apiFetch(chatURL, init)
+      assert.equal(res, result)
+      assert.equal(calls.length, 1)
+      const sent = calls[0]
+      assert.equal(sent.input, chatURL)
+      assert.equal(sent.init.method, "POST")
+      assert.equal(sent.init.signal, controller.signal)
+      assert.equal(sent.init.redirect, "error")
+      assert.equal(sent.init.cache, "no-store")
+      assert.deepEqual(JSON.parse(await bodyText(sent.init.body)), { ...request, reasoning_effort: "instant" })
+      assert.equal(sent.init.headers.get("authorization"), "Bearer sk_fixture")
+      assert.equal(sent.init.headers.get("x-request-id"), "fixture")
+      assert.equal(sent.init.headers.get("content-type"), "application/json")
+      assert.equal(sent.init.headers.get("content-length"), null)
+      assert.equal(headers.get("content-length"), String(Buffer.byteLength(text)))
+      assert.equal(init.headers, headers)
+      assert.notEqual(sent.init, init)
     })
-    const controller = new AbortController()
-    const init = {
-      method: "POST", headers, body: encode(text), signal: controller.signal,
-      redirect: "error", cache: "no-store",
-    }
-    const res = await apiFetch(chatURL, init)
-    assert.equal(res, result)
-    assert.equal(calls.length, 1)
-    const sent = calls[0]
-    assert.equal(sent.input, chatURL)
-    assert.equal(sent.init.method, "POST")
-    assert.equal(sent.init.signal, controller.signal)
-    assert.equal(sent.init.redirect, "error")
-    assert.equal(sent.init.cache, "no-store")
-    assert.deepEqual(JSON.parse(await bodyText(sent.init.body)), { ...request, reasoning_effort: "instant" })
-    assert.equal(sent.init.headers.get("authorization"), "Bearer sk_fixture")
-    assert.equal(sent.init.headers.get("x-request-id"), "fixture")
-    assert.equal(sent.init.headers.get("content-type"), "application/json")
-    assert.equal(sent.init.headers.get("content-length"), null)
-    assert.equal(headers.get("content-length"), String(Buffer.byteLength(text)))
-    assert.equal(init.headers, headers)
-    assert.notEqual(sent.init, init)
-  })
+  }
 }
 
 const unchangedEfforts = [
@@ -88,10 +97,11 @@ const unchangedEfforts = [
   ["high", { reasoning_effort: "high" }],
   ["native instant", { reasoning_effort: "instant" }],
   ["minimal", { reasoning_effort: "minimal" }],
-  ["omitted effort", {}],
   ["null effort", { reasoning_effort: null }],
   ["empty effort", { reasoning_effort: "" }],
-  ["none outside the effort field", { tool_choice: "none", reasoning: { effort: "none" } }],
+  ["whitespace effort", { reasoning_effort: " " }],
+  ["nonstring effort", { reasoning_effort: false }],
+  ["none outside the effort field", { reasoning_effort: "low", tool_choice: "none", reasoning: { effort: "none" } }],
 ]
 
 for (const [name, fields] of unchangedEfforts) {
@@ -111,27 +121,29 @@ for (const [name, fields] of unchangedEfforts) {
 
 test("API-key conversion is scoped to the official chat POST endpoint", async (t) => {
   const { calls } = mockFetch(t)
-  const bodies = JSON.stringify({ model: "mercury-3", messages: [user], reasoning_effort: "none" })
-  for (const [url, method] of [
-    [API_BASE + "/models", "GET"],
-    [API_BASE + "/models", "POST"],
-    [API_BASE + "/responses", "POST"],
-    [chatURL, "PUT"],
-    [chatURL, undefined],
-    ["https://example.com/v1/chat/completions", "POST"],
-    ["http://api.inceptionlabs.ai/v1/chat/completions", "POST"],
-    ["https://api.inceptionlabs.ai:8443/v1/chat/completions", "POST"],
-    ["invalid URL", "POST"],
-  ]) {
-    const init = { method, body: bodies }
-    await apiFetch(url, init)
-    assert.equal(calls.at(-1).input, url)
-    assert.equal(calls.at(-1).init, init)
+  for (const [, fields] of mappedEfforts) {
+    const body = JSON.stringify({ model: "mercury-3", messages: [user], ...fields })
+    for (const [url, method] of [
+      [API_BASE + "/models", "GET"],
+      [API_BASE + "/models", "POST"],
+      [API_BASE + "/responses", "POST"],
+      [chatURL, "PUT"],
+      [chatURL, undefined],
+      ["https://example.com/v1/chat/completions", "POST"],
+      ["http://api.inceptionlabs.ai/v1/chat/completions", "POST"],
+      ["https://api.inceptionlabs.ai:8443/v1/chat/completions", "POST"],
+      ["invalid URL", "POST"],
+    ]) {
+      const init = { method, body }
+      await apiFetch(url, init)
+      assert.equal(calls.at(-1).input, url)
+      assert.equal(calls.at(-1).init, init)
+    }
+    const input = new URL(chatURL + "?fixture=1")
+    await apiFetch(input, { method: "post", body })
+    assert.equal(calls.at(-1).input, input)
+    assert.equal(JSON.parse(calls.at(-1).init.body).reasoning_effort, "instant")
   }
-  const input = new URL(chatURL + "?fixture=1")
-  await apiFetch(input, { method: "post", body: bodies })
-  assert.equal(calls.at(-1).input, input)
-  assert.equal(JSON.parse(calls.at(-1).init.body).reasoning_effort, "instant")
 })
 
 test("invalid, nonobject and unsupported API-key bodies are forwarded unchanged", async (t) => {
@@ -170,7 +182,7 @@ test("API-key fetch leaves a Request body intact and maps explicit init override
   assert.equal(calls[1].init.headers.get("authorization"), "Bearer sk_override")
   assert.equal(input.bodyUsed, false)
 
-  await apiFetch(input, { body: JSON.stringify({ model: "mercury-2", reasoning_effort: "none" }) })
+  await apiFetch(input, { body: JSON.stringify({ model: "mercury-2" }) })
   const effective = new Request(calls[2].input, calls[2].init)
   assert.equal(effective.method, "POST")
   assert.equal(effective.redirect, "error")
@@ -189,13 +201,15 @@ test("API-key fetch leaves a Request body intact and maps explicit init override
 
 test("API-key rewriting preserves implicit Content-Type for strings, bytes and Blobs", async (t) => {
   const { calls } = mockFetch(t)
-  const text = JSON.stringify({ model: "mercury-3", reasoning_effort: "none" })
-  for (const body of [text, new TextEncoder().encode(text), new Blob([text], { type: "application/json" }), new Blob([text])]) {
-    const before = new Request(chatURL, { method: "POST", body })
-    await apiFetch(chatURL, { method: "POST", body })
-    const after = new Request(calls.at(-1).input, calls.at(-1).init)
-    assert.equal(after.headers.get("content-type"), before.headers.get("content-type"))
-    assert.equal((await after.json()).reasoning_effort, "instant")
+  for (const [, fields] of mappedEfforts) {
+    const text = JSON.stringify({ model: "mercury-3", ...fields })
+    for (const body of [text, new TextEncoder().encode(text), new Blob([text], { type: "application/json" }), new Blob([text])]) {
+      const before = new Request(chatURL, { method: "POST", body })
+      await apiFetch(chatURL, { method: "POST", body })
+      const after = new Request(calls.at(-1).input, calls.at(-1).init)
+      assert.equal(after.headers.get("content-type"), before.headers.get("content-type"))
+      assert.equal((await after.json()).reasoning_effort, "instant")
+    }
   }
 })
 
@@ -288,10 +302,35 @@ for (const [asked, sent] of [["none", "instant"], [" NONE ", "instant"], ["low",
   })
 }
 
-test("Playground keeps its upstream default for omitted, null and empty effort", async (t) => {
+test("Playground defaults omitted effort to instant for all serialized body types", async (t) => {
   const { calls } = mockFetch(t, () => Response.json({ content: "fixture answer" }))
-  for (const fields of [{}, { reasoning_effort: null }, { reasoning_effort: "" }, { reasoning_effort: " " }]) {
-    const request = { model: "mercury-3", messages: [user], ...fields, stream: false }
+  for (const stream of [false, true]) {
+    for (const [, encode] of encodings) {
+      const request = { model: "mercury-3", messages: [user], stream }
+      assert.deepEqual(playgroundRequest(request), { ...request, reasoning_effort: "instant" })
+      assert.equal(Object.hasOwn(request, "reasoning_effort"), false)
+      const controller = new AbortController()
+      const res = await playgroundFetch(chatURL, {
+        method: "POST", signal: controller.signal,
+        headers: { authorization: "Bearer playground" }, body: encode(JSON.stringify(request)),
+      })
+      assert.equal(res.status, 200)
+      assert.equal(calls.at(-1).input, PLAYGROUND_URL)
+      assert.equal(calls.at(-1).init.signal, controller.signal)
+      assert.equal(calls.at(-1).init.headers.get("authorization"), null)
+      assert.deepEqual(JSON.parse(calls.at(-1).init.body), { ...request, reasoning_effort: "instant" })
+      const text = await res.text()
+      assert.match(text, /fixture answer/)
+      if (stream) assert.match(text, /data: \[DONE\]/)
+    }
+  }
+  assert.equal(calls.length, encodings.length * 2)
+})
+
+test("Playground retains existing handling for explicit null, empty and nonstring effort", async (t) => {
+  const { calls } = mockFetch(t, () => Response.json({ content: "fixture answer" }))
+  for (const effort of [null, "", " ", false, 0]) {
+    const request = { model: "mercury-3", messages: [user], reasoning_effort: effort, stream: false }
     assert.equal(Object.hasOwn(playgroundRequest(request), "reasoning_effort"), false)
     await playgroundFetch(chatURL, { body: JSON.stringify(request) })
     assert.equal(Object.hasOwn(JSON.parse(calls.at(-1).init.body), "reasoning_effort"), false)
@@ -310,7 +349,7 @@ test("Playground effort conversion leaves the tool guard and cancellation intact
   const controller = new AbortController()
   await playgroundFetch(chatURL, {
     method: "POST", signal: controller.signal,
-    body: JSON.stringify({ model: "mercury-3", messages: [user], reasoning_effort: "none", tools: [], stream: false }),
+    body: JSON.stringify({ model: "mercury-3", messages: [user], tools: [], stream: false }),
   })
   assert.equal(calls.length, 1)
   assert.equal(calls[0].init.signal, controller.signal)

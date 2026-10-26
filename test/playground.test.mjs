@@ -60,6 +60,7 @@ test("playgroundRequest makes stream explicit and takes max_completion_tokens", 
     model: "m",
     messages: [],
     max_tokens: 32,
+    reasoning_effort: "instant",
     stream: false,
   })
   assert.equal(playgroundRequest({ model: "m", messages: [] }).stream, false)
@@ -331,6 +332,7 @@ test("playgroundFetch rewrites the URL, drops the credential and filters the bod
   assert.deepEqual(sent, {
     model: "mercury-3",
     messages: [{ role: "user", content: "hi" }],
+    reasoning_effort: "instant",
     stream: false,
   })
   const body = await res.json()

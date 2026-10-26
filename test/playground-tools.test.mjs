@@ -101,6 +101,6 @@ for (const [name, request] of allowed) {
     assert.equal((await res.json()).choices[0].message.content, "ordinary answer")
     assert.equal(calls.length, 1)
     assert.equal(calls[0].url, PLAYGROUND_URL)
-    assert.deepEqual(JSON.parse(calls[0].init.body), { model: "mercury-3", messages, stream: false })
+    assert.deepEqual(JSON.parse(calls[0].init.body), { model: "mercury-3", messages, reasoning_effort: "instant", stream: false })
   })
 }

@@ -89,7 +89,9 @@ The public catalog is not a guarantee that your account can call every listed mo
 
 The reasoning levels offered in Magpie are `none`, `low`, `medium`, and `high`. For both API-key and Playground accounts, the plugin converts `reasoning_effort: "none"` to Inception's `reasoning_effort: "instant"` immediately before sending the upstream request; the other three levels keep their names. Using `none` keeps the lowest-latency choice intact through Magpie's protocol conversion.
 
-This is a compatibility mapping to Inception's lowest-latency mode, not a guarantee of zero reasoning tokens. If no effort is specified, the plugin leaves the upstream default unchanged (`low` for Mercury 3, `medium` for Mercury 2.5 and Mercury 2). Magpie's routing and usage diagnostics may show the compatible name `none` while Inception receives `instant`. See [Inception's reasoning-effort documentation](https://docs.inceptionlabs.ai/capabilities/reasoning-efforts).
+If the caller omits `reasoning_effort`, both account types explicitly send `reasoning_effort: "instant"` to Inception by default. Explicit effort selections retain the behavior described above.
+
+This selects Inception's lowest-latency mode, not a guarantee of zero reasoning tokens. Magpie's routing and usage diagnostics may show the compatible name `none` while Inception receives `instant`. See [Inception's reasoning-effort documentation](https://docs.inceptionlabs.ai/capabilities/reasoning-efforts).
 
 List the available models:
 

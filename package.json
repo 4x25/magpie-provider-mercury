@@ -1,6 +1,6 @@
 {
   "name": "magpie-provider-mercury",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Inception Labs Mercury provider plugin for Magpie: use your own API keys or the free Mercury playground",
   "type": "module",
   "main": "./index.mjs",

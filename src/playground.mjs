@@ -41,8 +41,9 @@ export function playgroundRequest(body) {
         ? body.max_completion_tokens
         : undefined
     if (max !== undefined && max > 0) out.max_tokens = max
-    if (typeof body.reasoning_effort === "string" && body.reasoning_effort.trim()) {
-      out.reasoning_effort = upstreamEffort(body.reasoning_effort.trim())
+    const effort = upstreamEffort(body.reasoning_effort)
+    if (typeof effort === "string" && effort.trim()) {
+      out.reasoning_effort = effort.trim()
     }
   }
   out.stream = isObject(body) && body.stream === true
