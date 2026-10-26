@@ -87,7 +87,9 @@ Playground 接受消息、模型、输出 token 上限、流式开关和推理�
 
 公开目录中的模型不一定都能被当前账号调用，实际访问权限由 Inception 的账号权限和服务可用性决定。最新能力、限制及价格请以 [官方模型文档](https://docs.inceptionlabs.ai/get-started/models) 为准。
 
-Magpie 提供 `low`、`medium`、`high` 三档推理强度，以 `reasoning_effort` 发送。
+Magpie 提供 `none`、`low`、`medium`、`high` 四档推理强度。API Key 和 Playground 两种账号均在发送上游请求前，将 `reasoning_effort: "none"` 转换为 Inception 的 `reasoning_effort: "instant"`，其余三档保持原名。使用 `none` 能让最低延迟档位经过 Magpie 的协议转换后仍然保留。
+
+这是到 Inception 最低延迟模式的兼容映射，不承诺推理 token 为零。未指定档位时，插件保留上游默认值（Mercury 3 为 `low`，Mercury 2.5、Mercury 2 为 `medium`）。Magpie 的路由及用量诊断可能显示兼容名称 `none`，而 Inception 实际收到 `instant`。详见 [Inception 推理档位文档](https://docs.inceptionlabs.ai/capabilities/reasoning-efforts)。
 
 查看可用模型：
 

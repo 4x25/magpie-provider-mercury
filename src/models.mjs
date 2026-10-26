@@ -14,8 +14,8 @@ const MODELS_TIMEOUT = 15000
 
 const isObject = (v) => typeof v === "object" && v !== null && !Array.isArray(v)
 
-// variants is OpenCode's reasoning levels: the keys are the levels, and each
-// carries the request option OpenAI-compatible models take for it.
+// variants carries compatible reasoning names through the client and
+// Magpie. The account adapter maps "none" to "instant" before fetching.
 export function variants() {
   return Object.fromEntries(EFFORTS.map((e) => [e, { reasoningEffort: e }]))
 }

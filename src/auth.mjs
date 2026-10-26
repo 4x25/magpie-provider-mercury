@@ -5,6 +5,7 @@
 import { API_BASE, PLAYGROUND_BASE, PLAYGROUND_KEY } from "./catalog.mjs"
 import { KEYS_INPUT, KEYS_REQUIRED, keyImporter, parseAPIKeys } from "./accounts.mjs"
 import { playgroundFetch } from "./playground.mjs"
+import { apiFetch } from "./reasoning.mjs"
 
 export function authMethod(input) {
   const label = "Inception API keys (or playground)"
@@ -40,8 +41,8 @@ export function isPlaygroundAuth(auth) {
   )
 }
 
-// loader gives each account its base URL and, for the playground, the fetch
-// that adapts its requests.
+// loader gives each account its base URL and the fetch that adapts requests
+// for its upstream, including Mercury's lowest-latency reasoning effort.
 export async function loader(getAuth) {
   const auth = await getAuth()
   if (!auth || auth.type !== "api" || typeof auth.key !== "string") return {}
@@ -49,5 +50,5 @@ export async function loader(getAuth) {
     return { baseURL: PLAYGROUND_BASE, fetch: playgroundFetch }
   }
   // what the user pasted, without the whitespace a terminal adds
-  return { baseURL: API_BASE, apiKey: auth.key.trim() }
+  return { baseURL: API_BASE, apiKey: auth.key.trim(), fetch: apiFetch }
 }

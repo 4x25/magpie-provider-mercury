@@ -18,11 +18,10 @@ export const SDK = "@ai-sdk/openai-compatible"
 // playground.
 export const PLAYGROUND_KEY = "playground"
 
-// Magpie's reasoning levels, weakest first. Mercury also takes "instant",
-// but Magpie normalizes reasoning_effort to its own levels (low/medium/high)
-// on the way to a plugin, so offering instant would be a choice that sends
-// nothing. A client that does send instant itself still reaches Inception.
-export const EFFORTS = ["low", "medium", "high"]
+// The compatible levels offered to Magpie, weakest first. Declaring "none"
+// keeps the lowest-latency choice through its protocol translation; the
+// account's fetch maps it to Mercury's "instant" only on the way upstream.
+export const EFFORTS = ["none", "low", "medium", "high"]
 
 // What Inception's model page and models.dev say about the chat models.
 // `/v1/models` refreshes the numbers when it answers; these are the fallback.

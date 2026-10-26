@@ -87,7 +87,9 @@ For API-key accounts, Magpie refreshes the catalog from Inception and lists mode
 
 The public catalog is not a guarantee that your account can call every listed model. Model access depends on Inception's account permissions and service availability. See the [official model documentation](https://docs.inceptionlabs.ai/get-started/models) for current capabilities, limits, and pricing.
 
-The reasoning levels offered in Magpie are `low`, `medium`, and `high`, sent as `reasoning_effort`.
+The reasoning levels offered in Magpie are `none`, `low`, `medium`, and `high`. For both API-key and Playground accounts, the plugin converts `reasoning_effort: "none"` to Inception's `reasoning_effort: "instant"` immediately before sending the upstream request; the other three levels keep their names. Using `none` keeps the lowest-latency choice intact through Magpie's protocol conversion.
+
+This is a compatibility mapping to Inception's lowest-latency mode, not a guarantee of zero reasoning tokens. If no effort is specified, the plugin leaves the upstream default unchanged (`low` for Mercury 3, `medium` for Mercury 2.5 and Mercury 2). Magpie's routing and usage diagnostics may show the compatible name `none` while Inception receives `instant`. See [Inception's reasoning-effort documentation](https://docs.inceptionlabs.ai/capabilities/reasoning-efforts).
 
 List the available models:
 

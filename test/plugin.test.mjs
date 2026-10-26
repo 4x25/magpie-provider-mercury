@@ -3,7 +3,7 @@ import test from "node:test"
 
 import plugin, { _internal } from "../index.mjs"
 
-const { API_BASE, PLAYGROUND_BASE, PROVIDER, isPlaygroundAuth, KEYS_INPUT, KEYS_REQUIRED } = _internal
+const { API_BASE, PLAYGROUND_BASE, PROVIDER, isPlaygroundAuth, KEYS_INPUT, KEYS_REQUIRED, apiFetch } = _internal
 
 const hooks = () => plugin({ client: { app: { log: async () => {} } } })
 
@@ -63,7 +63,7 @@ test("the loader gives a key account the API and a playground account the playgr
   const { auth } = await hooks()
 
   const keyed = await auth.loader(async () => ({ type: "api", key: "  sk_test\n" }))
-  assert.deepEqual(keyed, { baseURL: API_BASE, apiKey: "sk_test" })
+  assert.deepEqual(keyed, { baseURL: API_BASE, apiKey: "sk_test", fetch: apiFetch })
 
   const playground = await auth.loader(async () => ({ type: "api", key: "playground" }))
   assert.equal(playground.baseURL, PLAYGROUND_BASE)

@@ -13,6 +13,7 @@
 //    stream always ends with [DONE].
 
 import { PLAYGROUND_URL } from "./catalog.mjs"
+import { bodyText, upstreamEffort } from "./reasoning.mjs"
 
 const encoder = new TextEncoder()
 
@@ -41,7 +42,7 @@ export function playgroundRequest(body) {
         : undefined
     if (max !== undefined && max > 0) out.max_tokens = max
     if (typeof body.reasoning_effort === "string" && body.reasoning_effort.trim()) {
-      out.reasoning_effort = body.reasoning_effort.trim()
+      out.reasoning_effort = upstreamEffort(body.reasoning_effort.trim())
     }
   }
   out.stream = isObject(body) && body.stream === true
@@ -137,14 +138,6 @@ export async function playgroundFetch(_input, init = {}) {
   if (!res.ok) return errorResponse(res)
   if (outgoing?.stream === true) return streamResponse(res, init.signal)
   return jsonResponse(res, outgoing?.model ?? body?.model ?? "")
-}
-
-async function bodyText(body) {
-  if (typeof body === "string") return body
-  if (body instanceof Uint8Array) return new TextDecoder().decode(body)
-  if (body instanceof ArrayBuffer) return new TextDecoder().decode(body)
-  if (ArrayBuffer.isView(body)) return new TextDecoder().decode(body)
-  return null
 }
 
 // ---- replies -----------------------------------------------------------------

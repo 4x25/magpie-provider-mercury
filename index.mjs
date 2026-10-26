@@ -9,8 +9,9 @@ import * as auth from "./src/auth.mjs"
 import * as catalog from "./src/catalog.mjs"
 import * as models from "./src/models.mjs"
 import * as playground from "./src/playground.mjs"
+import * as reasoning from "./src/reasoning.mjs"
 
 export default MercuryPlugin
 
 // The pieces the tests use; not a hook Magpie calls.
-export const _internal = { ...accounts, ...auth, ...catalog, ...models, ...playground }
+export const _internal = { ...accounts, ...auth, ...catalog, ...models, ...playground, ...reasoning }
